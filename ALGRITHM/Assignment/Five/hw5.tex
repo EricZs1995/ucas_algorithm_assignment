@@ -1,0 +1,147 @@
+\documentclass{article}
+\usepackage{ctex}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\title{第五次作业}
+\author{石逢钊-201818018670087}
+\date{\today}
+\begin{document}
+	\maketitle
+	\section{第一题}
+		
+		\subsection{算法描述}
+			\subsubsection{自然语言}
+			我们构造一个初始结点s和汇聚结点t，并设任务总数为r。将s与每一个任务相连，它们之间连线的权重为1；将每台电脑与t相连，他们之间的权重记为x；之后将任务与它对应的电脑相连。对于这个网络，我们首先设置x的值为所有的任务总数，然后对该网络跑一下Dinic算法，得到最大流f。如果f与r相等，则$x=x/2$，如果f小于r，则$x=x+x/2$；然后重复上述步骤计算f，直到x不再改变为止。
+			\subsubsection{伪代码}
+			\begin{algorithm}
+				\begin{algorithmic}[1]
+					\Require a directed graph G associated with a job and a computer
+					\Ensure Minimum load of the computer
+					\Function{mini\_load}{G}
+						\State create nodes $s,t$
+						\State $r=\#job$
+						\State $x=r$
+						\State $tag=x/2$
+						\State $result=x$
+						\State $f=0$
+						\State make s and t and G form a network flow G2
+						\While{$tag>=1$}
+							\State $f=Dinic(G2)$
+							\State $tag=x/2$
+							\If{$f==r$}
+								\State $result=x$
+								\State $x=x-tag$
+							\Else
+								\State $x=x+tag$
+							\EndIf
+							\State update the weight of graph G2 with x
+						\EndWhile
+						
+						\Return $result$
+					\EndFunction	
+				\end{algorithmic}
+			\end{algorithm}
+		
+		\vspace{5cm}
+		\subsection{可行性证明}
+		首先，在该算法中我们保证了所求得的结果是满足要求的，即所有的工作都能够被做完。其次，我们每一次计算最大流，实际上是在计算在每台计算机的负载上限x一定的情况下，所有工作是否均能被做完。然后我们在所有可行解中通过二分查找找到最小的哪一个作为我们的最终结果，所以算法是正确的。
+		\subsection{时间复杂度}
+		我们假设任务和计算机数目之和为n，网络流G2总的边的数目为m。创建网络流需要$O(n)$的时间，循环需要迭代$\log _2 n$次，每次迭代都需要$O(n^{2}m)$，所以总的算法时间复杂度为：
+		\begin{equation*}
+			\begin{split}
+				O(n^{2}m\log_{2}n)
+			\end{split}
+		\end{equation*}
+	\section{第二题}
+		\subsection{算法描述}
+			\subsubsection{自然语言}
+			我们添加初始结点s和汇聚结点t，将每一行的和与每一列的和作为结点，行的和的结点与列的和的结点全连接，并设它们的权值为1，然后让s与行的和相连，权值为每一行的和的值，t与列的和相连，权值为每一列的和，对此网络流运行最大流算法，即可找到相应的矩阵。
+			\subsubsection{伪代码}
+			\begin{algorithm}
+				\begin{algorithmic}[1]
+					\Require sum of each row and colum
+					\Ensure a matrix
+					\State initialize matrix to zero matrix
+					\Function{find\_matrix}{rows[m],cols[n]}
+						\If the sum of row != the sum of colum
+							
+							\Return False
+						\EndIf
+						\State create nodes $s,t$
+						\State make s, t, rows, cols into a network flow G
+						\State initialize $f(e)=0$ for all e
+						\State $f=0$
+						\While True 
+							\State construct layered network $G_L$ from residual graph G
+							\If $dist(s,t)=$
+								\State break
+							\EndIf
+							\State find a blocking floow $f^{'}$ in Gusing DFS technique,augment flow f by $f^{'}$
+							\State set the corresponding matrix position increase to 1
+						\EndWhile
+						
+						\Return True						
+					\EndFunction
+				\end{algorithmic}
+			\end{algorithm}
+		\subsection{可行性证明}
+			我们首先判断了给出的各行的和与各列的和是否可以构成一个矩阵，之后使用最大流算法来构造这个矩阵。我们每一次跑最大流时，实际上是使得第i行和第j列是否为1，如果流量流经该处，也就意味着在矩阵中该位置为1，否则为0，所以我们的算法是正确的。
+		\subsection{时间复杂度}
+		我们假设所构成的流的点的数目为n，边的数目为m，该算法主要使用了Dinic算法，所以，复杂度为：
+		\begin{equation*}
+			\begin{split}
+			O(n^{2}m)
+			\end{split}
+		\end{equation*}
+		
+	
+	\section{第六题}
+	
+		\subsection{算法描述}
+			
+			\subsubsection{自然语言}
+			我们首先添加一个初始结点s和汇聚结点t，将所有的边作为一个结点，s连接每一个边构成的结点，它们之间的权值为原来边的权值；将所有的顶点与t相连，它们之间的权值为顶点的权值；然后由边和点的关系，将边的点和定点构成的结点连起来，他们之间的权值为无穷，这样构成一个网络流G2，我们对G2执行Dinic算法算出最大流，然后将所有原来的边构成的点与s的之间的权值之和减去最大流即为所求结果。
+			\subsubsection{伪代码}
+			\begin{algorithm}
+				\begin{algorithmic}
+					\Require an undirected graph G 
+					
+					\Ensure max weight
+					
+					\Function{max\_weight}{G}
+					\State create nodes $s,t$
+					\State r is the sum of all sides in G
+					\State $result=0$
+					\State $f=0$
+					\State make s and t and G form a network flow G2
+					\State $f=Dinic(G2)$
+					\State $result=r-f$
+					
+					\Return $result$
+					\EndFunction
+				\end{algorithmic}
+			\end{algorithm}
+		
+		\vspace{5cm}
+		\subsection{可行性证明}
+		该问题为最大权闭合子图问题，原因如下：
+		
+		我们首先将原问题变形为：将每条边构成一个结点，权值为原来边的权值，并用两条有向边分别连接原来连接的结点，之后我们将原来的顶点的权值变为负值，这样我们就构成了一个新的图G，我们在原图中找权重最大的子图，就是在图G中找一个最大权闭合子图(如果我们在G中所找到的图不是闭合子图，则找到的图将无法恢复成原图)。
+		
+		最大权闭合子图权值=所有权值为正的权值之和-最大流
+		
+		所以，算法是正确的。
+		\subsection{时间复杂度}
+		我们假设算法中新构建的网络流G2的结点数目为n，边的数目为m，则该算法与Dinic算法的时间复杂度相同，为：
+		\begin{equation*}
+		\begin{split}
+		O(n^{2}m)
+		\end{split}
+		\end{equation*}
+		
+		
+\end{document}

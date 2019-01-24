@@ -1,0 +1,424 @@
+\documentclass[UTF8,a4paper,12pt]{article}
+\usepackage[top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{tikz}
+
+\usepackage{CJK}
+\usepackage{amsmath,bm}
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+\floatname{algorithm}{PROBLEM}
+\renewcommand{\algorithmicrequire}{INPUT:}
+\renewcommand{\algorithmicensure}{OUTPUT:}
+
+%\begin{CJK}{UTF8}{gkai}
+\title{091M4041H - Assignment Two\\Dynamic Programing}
+\date{\today}
+\author{张   帅\\201828018670119\\网络空间安全学院, UCAS}
+
+%\end{CJK}
+
+
+%\begin{CJK}{UTF8}{gkai}
+%	你好，世界
+%\end{CJK}
+
+
+\begin{document}
+	\begin{CJK}{UTF8}{gkai}
+		\maketitle
+	\section{Money Robbing}
+	\subsection{Description}
+	
+		A robber is planning to rob houses along a street. Each house has a certain amount of money stashed, the only constraint stopping you from robbing each of them is that adjacent houses have security system connected and it will automatically contact the police if two adjacent houses were broken into on the same night.
+		
+		Given a list of non-negative integers representing the amount of money of each house, determine the maximum amount of money you can rob tonight without alerting the police.
+		
+		What if all houses are arranged in a circle?
+	
+	\subsection{Defining the general form of sub-problems}
+	
+		It's not easy to solve the problem with $ n $ houses, let's examine whether it is possible to reduce the problem into smaller sub-problems.
+	
+		Solution: a subset of houses. let's describe the solving process as a process of multistage decisions. At $ i $-th decision state, we decide whether the house $ i $ should be robbed.
+	
+		Suppose we have already worked out the optimal solution. Consider the first decision, i.e. wheather the optimal solution contains house $ n $ or not (here we assume an order of houses and consider the houses from end to beginning). This decision has two options:
+
+		\begin{itemize}
+			\item \textbf{\textit{\small ROB :}} since we cannot rob the neighboring house, then we should calculate optimal rob solution for region $ 1 \dots n-2 $.
+	
+			\item \textbf{\textit{\small ABANDON :}} it suffices to rob houses as "rich" as possible from region $ 1 \dots n-1 $.
+		\end{itemize}
+	
+		In each cases, the origin problem is reduced into smaller sub-problems.
+	
+		If all houses are arranged in a circle, the problem is similar to that above. Due to the first house and the last house are adjacent, we cannot rob them at the same time. So we can divide this problem into two sub-problems, the one's region is [1,n-1](including the first house, but not include the last one), the other's region is [2,n](including the last house, but not include the first one). Then we calculate the results of the sub-problems and return the larger result.
+
+	\subsection{Optimal Sub-structure Property}
+	
+		Summarizing these two cases, we can set the general form of sub-problems as: to rob houses as "rich" as possible from region $ 1 \dots i $. Denote the optimal solutions value as $ OPT[i] $. 
+
+		Then we can prove the optimal sub-structure property:
+	
+		$$ OPT[n] = max \left\{
+		\begin{aligned}
+			& OPT[n-2] + v_{n} &&(a)\ \ if\  house_{n}\ was\ robbed\\
+			& OPT[n-1]	&&(b)\ \ if\ house_{n}\ wasn't\ robbed
+		\end{aligned}
+		\right.
+		$$
+
+
+	\subsection{Pseudo-Code}
+	
+	\begin{algorithm}[htb]
+		\caption{house robber with or without circle}
+		\begin{algorithmic}[1]
+			\Require
+			Given a list of non-negative integers representing the amount of money of each house, $ V $.
+			The house number, $ n $.
+			\Ensure
+			Determine the maximum amount of money you can rob tonight without alerting the police.
+			
+			\Function {Rob\_Without\_Circle}{$V,n$}
+				\State Create a $ 1*(n+1) $ array $ OPT $
+				\State Initialize $ OPT $ with 0
+				\For{$ i = 1 \to n $}
+					\State $ OPT[i] \gets \Call{MAX}{OPT[i],OPT[i-1]} $
+					\If{$ i-2>=0 $}
+						\State $ OPT[i] \gets \Call{MAX}{OPT[i],OPT[i-2]+V_{i}} $
+					\Else
+						\State $ OPT[i] \gets \Call{MAX}{OPT[i],V_{i}} $
+					\EndIf
+				\EndFor
+				\State \Return{$ OPT[n] $}
+			\EndFunction
+			\State
+			
+			\Function {Rob\_With\_Circle}{$V,n$}
+				\State $ Opt_Without_1 \gets$ \Call{Rob\_Without\_Circle}{$V[1,n-1],n-1 $} 					\State $ Opt_Without_N \gets$ \Call{Rob\_Without\_Circle}{$ V[2,n],n-1 $} 
+				\State \Return  \Call{MAX}{ $ Opt_Without_1,Opt_Without_N $}
+			\EndFunction
+			
+		\end{algorithmic}
+	\end{algorithm}
+
+	\subsection{Correctness Proof}
+	\subsubsection{House robber without Circle}
+		Consider the first case: house $ n $ was robbed, so why the optimal solution was define as $ (a) OPT[n-2] + v_{n}$?
+		
+		Suppose that there are three houses between house $A $ and house $B $ (define A as house $n-4$, while define B as house $ n $). If we define the optimal solution as $ OPT[n] = OPT[n-4] + v_{n} $, then there must be another robbery scheme to make the solution better, $ OPT^{'}[n] = OPT[n-4] + v_{n} + v_{n-2} $. Obviously, $ OPT^{'}[n] $ is bigger than $ OPT[n] $. Of course, if there are more houses that was not be robbed between house $ A $ and $ B $, we can always find an example that is better than the optimal solution we define.
+		
+		But what if there are two houses between A and B? Why we define Why do we not define the optimal solution is to take the maximum from these three values($OPT[n-1] , OPT[n-2] + v_{n} , OPT[n-3] + v_{n} $)? let's prove it: for region $ 1 \dots n $, 
+		\begin{align}
+			OPT[n] = max\{OPT[n-1], OPT[n-2] + v_{n} \}
+		\end{align}
+		
+		Expand $ OPT[n-2] $, 
+		
+		\begin{align}
+			OPT[n-2] = max\{OPT[n-3], OPT[n-4] + v_{n-2} \}
+		\end{align}
+		
+		Substituting equation (2) for equation (1), we can get the following equation:
+		\begin{align}
+		OPT[n] = max\{OPT[n-1], OPT[n-3] + v_{n}, OPT[n-4] + v_{n-2} + v_{n} \}
+		\end{align}
+		
+		Obviously, the third  value $ (OPT[n-3] + v_{n}) $ is included in the second value $ (OPT[n-2] + v_{n}) $.
+		
+		
+		Then, let's proof the correctness of this algorithm. Suppose for $ house_{i} $, there is another rob solution $ OPT^{'}[i] $ better than $ OPT[i] $, Then the $ OPT^{'}[i] $ may lead to a new solution with higher value than $ OPT[i+1]$(if $ house_{i+1} $ isn't robbed) and $ OPT[i+2]$(if $ house_{i+2} $ is robbed): a contradiction for the definition of optimal function.
+		
+	\subsubsection{House robber with Circle}
+		The problem is been divided into two sub-problems, we can seen that it just the above problem without difference, so it can't influent the correctness, just one more comparison operation.
+		
+		Then why we divide them into two sub-problems(region $ [1,n-1] $ and region $ [2,n] $)? We mainly want to guarantee that the first house and the last house won’t be robbed at the same time.  
+	
+	\subsection{Complexity Analysis}
+	\subsubsection{House robber without Circle}
+	\begin{itemize}
+		
+		\item{\textbf{Time Complexity:}} \\
+		Each iteration only cost several operations.
+		\begin{align*}
+			T(n) = c*n
+			=O(n)
+		\end{align*}
+		\item{\textbf{Space Complexity:}}\\
+		We use a 1*n array to store the optimal solution of the subproblem. so the space complexity is $ O(n) $.
+	\end{itemize}
+	\subsubsection{House robber with Circle}
+	\begin{itemize}
+		\item{\textbf{Time Complexity:}} 
+		\begin{align*}
+		T(n) = 2*c*(n-1)+c=O(n)
+		\end{align*}
+		\item{\textbf{Space Complexity:}}\\
+		We use two 1*(n) arrays to store the optimal solution of the subproblem. so the space complexity is $ O(n) $.
+	\end{itemize}
+
+
+
+
+
+%%problem two
+	\newpage
+	\section{Decoding}
+	\subsection{Description}
+		A message containing letters from A-Z is being encoded to numbers using the following mapping:
+		\begin{align*}
+			& A:1\\
+			& B:2\\
+			& \  \ ...\\ 
+			& Z : 26
+		\end{align*}
+		
+		Given an encoded message containing digits, determine the total number of ways to decode it.
+		
+		For example, given encoded message “12”, it could be decoded as “AB” (1 2) or “L” (12). The number of ways decoding “12” is 2.	
+	
+	\subsection{Defining the general form of sub-problems}
+	
+		It's not easy to solve the problem with $ n $ which is the length of given non-empty string $ S $ containing only digits, let's examine whether it is possible to reduce the problem into smaller sub-problems.
+	
+		Firstly, we define $ S_{i} $ as the $ i $-th digit, and $ S_{i}S_{i+1} $ as the combination of the $ i $-th and the $ i+1$-th digit.
+	
+		Solution: a subset of string. let's describe the solving process as a process of multistage decisions. At $ i $ decision state, we calculate the decoding results starting with $ S_{i} $ or $ S_{i}S_{i+1} $ respectively.
+	
+		Suppose we have already worked out the optimal solution. Consider the first decision, i.e. due to $ S_{i} $ and $ S_{i}S_{i+1}$ has mutiple situation, the decision has three options.
+	
+		\begin{itemize}
+			\item $\bm{ S_{i} = 0 :}$ Since no encoding starts with 0, so the number of possible encoding is zero.
+			
+			\item $\bm{  S_{i}S_{i+1} \in [10,26] :}$ We use $ S_{i}S_{i+1} $ as the beginning of encoding when $ S_{i}S_{i+1} $ is between 10 and 26, Because the range we can encode is $ [1,26] $, Obviously, [10,26] is included in it.Then we just to calculate the optimal decode solution for region $ i+2 \dots n $ .
+			
+			\item $\bm{ S_{i} \in [1,9]\ \textbf{and}\ S_{i}S_{i+1} \notin [10,26]  :}$ We use $ S_{i} $ as the beginning of encoding when $ S_{i} $ is between 1 and 9, Because the range we can encode is $ [1,26] $, Obviously, $ [1,9] $ is included in it. Then we just to calculate the optimal decode solution for region $ i+1 \dots n $ .
+		\end{itemize}
+	
+		At last, we combine the three options, and the optimal decode solution for region $ i \dots n $ will be got.
+	
+		In each cases, the origin problem is reduced into smaller sub-problems.
+	
+	\subsection{Optimal Sub-structure Property}
+	
+		Summarizing these two cases, we can set the general form of sub-problems as: to rob houses as "rich" as possible from region $ i \dots n $. Denote the optimal solutions value as $ OPT([i]) $. 
+		
+		Then we can prove the optimal sub-structure property:
+		
+		$$ OPT([i]) = \left\{
+		\begin{aligned}
+			& 0 &&\ if\ S_{i}=0\\
+			& OPT([i+1]) + OPT([i+2])	&&\ if\ S_{i}S_{i+1}\in[10,26]\\
+			& OPT([i+1]) &&\ if\ S_{i} \in [1,9]\ \textbf{and} \ S_{i}S_{i+1} \notin [10,26]\\
+		\end{aligned}
+		\right.
+		$$
+	
+	\subsection{Pseudo-Code}
+	
+	\begin{algorithm}[htb]
+		\caption{house robber with or without circle}
+		\begin{algorithmic}[1]
+			\Require
+				Given a non-empty string containing only digits, $ S $.
+				The length of $ S, n $
+			\Ensure
+				Determine the total number of ways to decode it.
+			\Function {Decode}{$ S , n $}
+				\State Create a $ 1*(n+2) $ array $ OPT $
+				\State Initialize $ DP $ with 0
+				\State $ OPT[n+1] \gets 1 $
+				\State $ OPT[n] \gets S_{n}==0?0:1 $
+				\For{$ i = n-1 \to 1 $}
+					\If {$ S_{i} == 0 $}
+						\State \textbf{continue}
+					\ElsIf{$ S_{i}S_{i+1} \in [10,26] $}
+						\State $ OPT[i] \gets OPT[i-1]+DP[i+2] $
+					\Else
+						\State $ OPT[i] \gets OPT[i-1] $
+					\EndIf
+				\EndFor
+				\State \Return $ OPT[1] $
+			\EndFunction
+			\State
+		\end{algorithmic}
+	\end{algorithm}
+	
+
+	\subsection{Correctness}
+		As described in $ 2.2 $, if $ S_{i} = 0 $, due to there is no letter's encoding start with 0, so the decoding ways for region $ [i,n] $ is zero. 
+	
+		Suppose for the region $ [i,n] $, we have a optimal solution $ OPT[i] $, if we have another decoding way $ OPT^{'}[i] $ better than $ OPT[i] $, then the decoding way may $ OPT^{'}[i] $ lead to a new solution with more decoding ways than $ OPT[i-1] $ \{if $ S_{i-1} \in [1,9]$ and $ S_{i-1}S_{i} \notin [10,26] $\} and $ OPT[i-2] $\{if $ S_{i-2}S_{i-1}\in[10,26] $\}: a controdiction.
+	
+	\subsection{Complexity Analysis}
+	\begin{itemize}
+		\item{\textbf{Time Complexity:}} \\
+			Each iteration only has several operations.
+			\begin{align*}
+			T(n) &= c*n\\
+			&=O(n)
+			\end{align*}
+		\item{\textbf{Space Complexity:}}\\
+			We use a 1*(n+2) array to store the optimal solution of the subproblem. so the space complexity is $ O(n) $.
+		
+	\end{itemize}
+	
+	
+	
+	
+	
+	
+	
+	\newpage
+	\section{Maximum Profit of Transactions}
+	\subsection{Description}
+		You have an array for which the $ i $-th element is the price of a given stock on day $ i $.
+		
+		Design an algorithm and implement it to find the maximum profit. You may complete at most two transactions.
+		
+		$ Note: $ You may not engage in multiple transactions at the same time (ie, you must sell the stock before you buy again), and one transaction includes buying and selling.
+	
+	
+	\subsection{Defining the general form of sub-problems}
+	
+		\begin{itemize}
+			\item \textbf{\textit{General Form: }} Firstly, let's consider the general form of the problem---assume that we can complete at most  \textbf{\textit{k}} transactions with an array $ P $ for which the $ P_{i} $ is the price of a given stock on day $ i,\ i\in[1,n]$.
+		\end{itemize}
+		
+		It's not easy to solve the problem with $ n $ which is the number of a given price sequense, let's examine whether it is possible to reduce the problem into smaller sub-problems.
+		
+		Solution: a sub-sequence of the price sequence. Let’s describe the solving process as a process of multistage decisions; at each decision stage, At the $ i $-th decision stage, we decide whether the $ i $-th day should be involved in the transaction (\textit{NOTE:} if the stock is sold at $ i $-th day, we think the day is involved in the transaction).
+		
+		Suppose we have already worked out the optimal solution. Consider the first decision, i.e. whether the optimal solution contains item n or not (here we assume an order of the items and consider the items from end to beginning). This decision has two options:
+		
+		\begin{itemize}
+			\item $\textbf{\textit{\small SELL :}}$ Then it suffices to make profit as more as possible from day 1 to day $ n $  with at most $ k $ transactions. And day $ n $ take part in one of these  transactions(the stock was sold on day $ n $).
+			
+			\item $\textbf{\textit{\small ABANDON :}}$ Otherwise, we should make profit as more as possible from day 1 to day $ n-1 $ with at most $ k $ transactions.
+			
+		\end{itemize}
+		
+		In both cases, the original problem is reduced into smaller sub-problems.
+	
+	\subsection{Optimal Sub-structure Property}
+	
+		Summarizing these two cases, we can set the general form of sub-problems as: to make profit as more as possible from day 1 to day $ n $ with at most $ k $ transactions. Denote the optimal solution value as $ OPT(n, k) $.
+		
+		Then we can prove the optimal sub-structure property:
+	
+		$$ OPT(n,k) = max \left\{
+		\begin{aligned}
+			& OPT(n-1,k)\\
+			& max_{1\le{i}<{j}\le{n-1}}\{ OPT(i,k-1) + P_{n} - P_{j}\}
+		\end{aligned}
+		\right.
+		$$
+	
+	\subsection{Pseudo-Code}
+		Here, we give two pseudo-codes that implement the same functionality, but with different complexity, one is the general form and the other is the form of state compression.
+		
+		The following is the general form:
+	\begin{algorithm}[htb]
+		\caption{Maximum Profit of Transactions}
+		\begin{algorithmic}[1]
+			\Require
+			The price sequence of stock, $ P $.
+			The number of days, $ n $.
+			The maximum number of transaction, $k$.
+			\Ensure
+			Determine the maximum profit of transactions.
+			
+			\Function{MaxProfit}{$ P,n,k $}
+				\State Create a $ (n+1)*(k+1) $ array $ OPT $
+				\State Initialize $ OPT $ with 0
+				\For{$ i = 1 \to n $}
+					\For{$ l = 1 \to k $}
+						\For{$ j = 1 \to i-2 $}
+ 							\State $ OPT[i,l]  \gets max\{OPT[i-1,l], OPT[j,l-1] + P[i]-P[j+1]\} $
+						\EndFor
+					\EndFor				
+				\EndFor
+				\State \Return $ OPT[n,k] $
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+
+	\newpage
+		The following algorithm uses state compression techniques. The array $ PRO $ record the intermediate results. Assume today is the $ i $-th day, then we define $ OPT[k] $ as the maximum profit that we make with $ k $ transaction on the first $ i-1 $ days. So, $ OPT[k]-P[i] $ represent the rest of profit after buying stocks, then we assign The opposite of $ OPT[k]-P[i] $ to $ PRO[k] $. In the next few days, if we want to sell the stock, we can get the final profit by subtracting the intermediate result($ PRO[k] $) from the day's stock price($ p[j]\{j\in[i+1,n]\} $).
+		
+	\begin{algorithm}[htb]
+		\caption{Maximum Profit of Transactions}
+		\begin{algorithmic}[1]
+			\Require
+				The price sequence of stock, $ P $.
+				The number of days, $ n $.
+				The maximum number of transaction, $k$.
+			\Ensure
+				Determine the maximum profit of transactions.
+			\Function{MaxProfitCompr}{$ P,n,k $}
+				\State Create two $ 1*(k+1) $ arrays $ OPT,PRO $
+				\State Initialize $ OPT $  with 0
+				\State Initialize $ PRO $ with $ P[1] $
+				\For{$ i = 1 \to n $}
+					\For{$ l = 1 \to k $}
+						\State $ PRO[l] \gets min\{PRO[l],\ P[i]-OPT[l-1]\} $
+						\State $ OPT[l] \gets max\{OPT[l],\ P[i]-PRO[l]\}$
+					\EndFor				
+				\EndFor
+				\State \Return $ OPT[k] $
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+
+	\subsection{Correctness}
+	
+		Suppose for day $ i $,there is another transaction strategy $ OPT^{'}[i,k] $ better than $ OPT[i,k] $, it may lead to a new transaction way with higher profit than $ OPT[i+1,k] $: a contradiction for the definition of optimal function.
+	
+	\subsection{Complexity Analysis}
+	\subsubsection{General Form}
+		\begin{itemize}
+			\item{\textbf{Time Complexity:}} 
+			\begin{align*}
+			T(n) &= c*k*(1+2+3+\dots+n-2)\\
+				&=O(kn^{2})
+			\end{align*}
+			\item{\textbf{Space Complexity:}}
+			
+			\setlength{\parindent}{2em}We use a $ (n+1)*(k+1) $ array to store the optimal solution of the subproblem. so the space complexity is $ O(kn) $.
+			
+		\end{itemize}
+	\subsubsection{DP with State Compression}
+		\begin{itemize}
+			\item{\textbf{Time Complexity:}} 
+			\begin{align*}
+			T(n) &= c*n*k\\
+			&=O(kn)
+			\end{align*}
+			\item{\textbf{Space Complexity:}}
+			
+			\setlength{\parindent}{2em}We use two $ 1*(k+1) $ arrays to store the optimal solution of the problem and the intermediate results. so the space complexity is $ O(k) $. 
+		\end{itemize}
+		
+	\subsubsection{In This Problem($ k=2 $)}
+		\begin{itemize}
+			\item{\textbf{\textit{General Form:}}}
+			
+			\setlength{\parindent}{4em}	Time Complexity: $ O(n^{2}) $
+			
+			\setlength{\parindent}{4em}	Space Complexity: $ O(n) $
+			
+			
+			\item{\textbf{\textit{State Compression:}}}	
+			
+			\setlength{\parindent}{4em}	Time Complexity: $ O(n) $
+			
+			\setlength{\parindent}{4em}	Space Complexity: $ O(1) $
+		\end{itemize}
+		
+	\end{CJK}	
+
+\end{document} 

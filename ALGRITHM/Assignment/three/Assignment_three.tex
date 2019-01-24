@@ -1,0 +1,258 @@
+\documentclass[UTF8,a4paper,12pt]{article}
+\usepackage[top=2cm,bottom=2cm,left=2cm,right=2cm]{geometry}
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage{algpseudocode}
+\usepackage{amsmath}
+\usepackage{tikz}
+
+\usepackage{CJK}
+\usepackage{amsmath,bm}
+\usepackage{indentfirst}
+\setlength{\parindent}{2em}
+\floatname{algorithm}{PROBLEM}
+\renewcommand{\algorithmicrequire}{INPUT:}
+\renewcommand{\algorithmicensure}{OUTPUT:}
+
+%\begin{CJK}{UTF8}{gkai}
+\title{091M4041H - Assignment Three\\Greedy Algorithm}
+\date{\today}
+\author{张   帅\\201828018670119\\网络空间安全学院, UCAS}
+
+%\end{CJK}
+
+
+%\begin{CJK}{UTF8}{gkai}
+%	你好，世界
+%\end{CJK}
+
+
+\begin{document}
+	\begin{CJK}{UTF8}{gkai}
+		\maketitle
+	\section{是否存在无向图？}
+	\subsection{问题描述}
+	
+		Given a list of n natural numbers $ d_{1},d_{2},\dots,d_{n} $ , show how to decide in polynomial time whether there exists an undirected graph $ G = (V, E) $ whose node degrees are precisely the numbers $ d_{1},d_{2},\dots,d_{n} $. $ G $ should not contain multiple edges between the same pair of nodes, or “loop” edges with both endpoints equal to the same node.
+	
+	\subsection{基本思想}
+		%由于本题目并没有严格要求构成的图必须是连通无向图，因此不需要考虑图是否连通情况。
+		
+		假设给定的节点及其度数可以构成图，每次从图中选择一个度数最大的节点，将该节点及所有与其相连的边删除，重复这个过程，那么到最后无向图$ G $必然会变为空。
+		
+		将度数从大到小排序，每次选取度数最大的点（度数为$ d_{i} $），假设它与随后的$ |d_{i}| $个节点用边连接，将这些边删除，即：随后的$ |d_{i}| $个节点的度数都减1，后面的度数出现-1的情况，说明没有那么多节点与该节点相连，所以就无法构成图；否则，重复该过程，直到遍历完所有的节点为止。
+		
+		%如果每次都在节点集中任意选择一个节点，则最后的时间复杂度会是指数集的，因此，我们可以设计每次都选择第一个，这样时间复杂度会降到多项式级，并且能保证具有最优子结构性质。在算法上的表述为：在第$ i $次操作中，取出第一个节点，它的度数为$ |d_{i}| $，然后假设它与随后的$ |d_{i}| $个节点相连，那么将$ d_{i} $节点及所有与它相连的边删除，在度数上的表示是：第一个节点$ d_{i} $被删除，随后的$ |d_{i}| $个节点的度数依次减一。如果在第一个节点之后没有$ |d_{i}| $那么多个节点，则表示不能构成无向图，直接返回false，否则重复上面的过程，直到操作到最后，则说明存在这样的无向图。
+	\subsection{伪代码}
+	
+	\begin{algorithm}[htb]
+		\caption{Determine whether there exists an undirected graph}
+		\begin{algorithmic}[1]
+			\Require
+			Given a list of n natural numbers $ d_{1},d_{2},\dots,d_{n} $, $ D,n $.
+			\Ensure
+			Determine whether there exists an undirected graph.
+			\Function {IsExistUndirectedGraph}{$ D,n $}
+				\State $ flag \gets true $
+				\For{$ i = 1 \to n $}
+					\State sort D[i:n] in non-increase order					
+					\For{$ j = i+1\to i + D_{i} $}
+						\If{$ D_{j}-1 != -1$}
+							%\State $ D_{i} \gets D_{i} - 1 $
+							\State $ D_{j} \gets D_{j} - 1 $
+						\Else
+							\State \Return $ false $
+						\EndIf
+						\State $ D_{i} \gets 0 $
+					\EndFor
+				\EndFor
+				\State \Return $ true $
+			\EndFunction
+		\end{algorithmic}
+	\end{algorithm}
+
+	\subsection{贪心选择性质}
+		每次选择度数最大的节点删除边，如果该节点都无法满足其度数，那么肯定无法构成图；否则，继续判断。
+	\subsection{最优子结构性质}
+		从上面的算法思想以及贪心选择中我们可以知道，原问题的解与子问题的解(删去第一个节点及所有与其相连的边的之后的子图)相同。
+		
+		$$ OPT{D[i\dots n]} = \left\{
+		\begin{aligned}
+		& OPT(D^{'}[i+1\dots n]) &&\ if\ condition\ 1  \\
+		& false	&&\ otherwise
+		\end{aligned}
+		\right.
+		$$
+		
+		式中$ condition 1 $为：在$ [i+1,n] $节点区域中，存在$ |D[i]| $个节点可以和节点$ i $连通，如果该条件不成立，则返回false。$ D^{'}[i+1\dots n] $为与节点$ i $连通的各个节点度数减1之后的度数列表。
+		
+	\subsection{正确性证明}
+		假设能构成图$ G = (V, E) $，那么依次删除度数最大的节点相连的各条边，删到最后，各个节点的度数必然都为0，所以返回true成立。
+		
+		而如果存在一个节点的度数要大于子图$ G^{'} = (V-D_{i}, E-E_{D_{i}}) $中节点的个数，则不能构成图。这是因为题目要求，构成的图中，两个节点之间至多只能有一条边，且不存在边的两个端点是同一个节点的情况，所以肯定该节点肯定无法达到其期望的度数，返回false成立。
+		
+	\subsection{复杂度分析}		
+		\begin{itemize}
+			\item{\textbf{时间复杂度:}} \\
+			排序时间复杂度为为$ T(n)=O(nlogn) $
+			
+			最好的情况是搜到第一个就出现返回false的条件，时间复杂度为$ T(n)=O(nlogn) $;
+			
+			最坏的情况即存在一个简单完全无向图，则度数总和为$ n(n-1)/2 $，时间复杂度为:
+			\begin{align*}
+			T(n) &= n*nlogn+c*n(n-1)/2\\
+			&=O(n^{2}logn)
+			\end{align*}
+			
+			而一般情况为$ T(n)=O(n^{2}logn) $
+			
+			\item{\textbf{空间复杂度:}}\\
+			额外使用的空间是常数量级的，即为$ O(1) $。
+		\end{itemize}
+
+
+	\newpage
+	\section{作业调度}
+	\subsection{问题描述}
+		There are n distinct jobs, labeled $ J_{1} , J_{2} , \dots , J_{n} $ , which can be performed completely independently of one another. Each jop consists of two stages: first it needs to be preprocessed on the supercomputer, and then it needs to be finished on one of the PCs. Let’s say that job $ J_{i} $ needs $ p_{i} $ seconds of time on the supercomputer, followed by $ f_{i} $ seconds of time on a PC. Since there are at least n PCs available on the premises, the finishing of the jobs can be performed on PCs at the same time. However, the supercomputer can only work on a single job a time without any interruption. For every job, as soon as the preprocessing is done on the supercomputer, it can be handed off to a PC for finishing.
+	
+	\subsection{基本思想}
+		首先将作业按照$ f_{i} $按照非增序排序，排序之后的作业序列即是作业调度的序列，然后记录每个作业的完成时间，返回完成时间的最大值即可。
+		
+	\subsection{伪代码}
+		\begin{algorithm}[htb]
+			\caption{Job Scheduling}
+			\begin{algorithmic}[1]
+				\Require
+					Given two lists $ P $ and $ F $. And the number of jobs, n.
+				\Ensure
+					Determine the minimum time that overcome these n jobs, m.
+				\Function {JobScheduling}{$ P , F , n $}
+					\State sort job by $ P $ in non-incresing order
+					\State $ m \gets 0 $
+					\State $ cur\_sup \gets 0 $ /*current supercomputer's running time */
+					\For{$ i = 1 \to n $}
+						\State $ cur\_sup \gets cur\_sup + P[i] $
+						\State $ m \gets \Call{Max}{m,cur\_sup+F[i]} $
+					\EndFor
+					\State \Return $ m $
+				\EndFunction
+			\end{algorithmic}
+		\end{algorithm}
+		
+	\subsection{贪心选择性质}
+		每次从工作集中选择$ f_{i} $最大的先执行，然后重复这样的动作。
+		
+	\subsection{最优子结构性质}
+		
+		为了方便计算，我们定义$ OPT $由两部分组成，当前的最晚完成时间$ OPT(i) $和当前supercomputer上的运行时间$ CurT(i) $。
+	
+		\begin{align*}
+			CurT(i) = CurT(i-1) +P[i]
+		\end{align*}
+		$$ OPT(i) = max \left\{
+			\begin{aligned}
+				& CurT(i)+F[i]\\
+				& OPT(i-1)
+			\end{aligned}
+			\right.
+		$$
+
+	\subsection{正确性证明}
+	\subsubsection{证明1}
+		假设作业$ k $为完成时间最晚的作业，它的完成时间为$ \sum_{i=1}^{k}P[i]+F[k] $，现在证明在作业$ k $后面不可能出现一个作业$ l $，使得$ F[l]>F[k] $。对于作业$ l $，它的完成时间为$ \sum_{i=1}^{l}P[i]+F[l] $。
+		
+		因为$ k<l $，所以很容易得出$ \sum_{i=1}^{k}P[i] < \sum_{i=1}^{l}P[i] $,又因为$ F[l]>F[k] $，所以$ \sum_{i=1}^{k}P[i]+F[k] < \sum_{i=1}^{l}P[i]+F[l] $，这与作业$ k $为完成时间最晚的作业相矛盾，所以最晚完成的作业的后面不可能存在一个$ F $值更大的作业。
+		
+	\subsubsection{证明2}
+		假设作业序列$ J_{1} , J_{2} , \dots , J_{n} $满足按$ F $值非增序排列，现在按照这个进行作业调度。若此时出现另一个作业$ k $，使得存在存在这种情况：$ F[l]\le F[k]<F[l+1],l\in[1,n] $，将它排在作业调度序列的最后，则其完成时间为$ \sum_{i=1}^{n}P[i]+P[k]+F[k] $。很明显这个值可能会是最大值。现在查找有没有一个序列能够使得这个值变得小一些。
+		
+		由证明1中可以得出，如果存在$ F[j]<F[k] $,按照$ j,k $进行的作业调度用时要大于按照$ k,j $进行的作业调度用时。而由已知条件$ F[l]\le F[k]<F[l+1],l\in[1,n] $，所以应该将作业$ k $放在作业$ l $之后，作业$ l+1 $之前执行。同理，不应该将作业$ k $放在$ F $值比$ F[k] $大的作业之前执行。
+		
+		下面考虑$ F $值相等的情况。假设$ F[l]=F[k] $，则按照$ k,l $进行的作业调度最大用时为：$ \sum_{i=1}^{l-1}P[i]+P[k]+P[l]+F[l] $
+		按照$ l,k $进行的作业调度最大用时为$ \sum_{i=1}^{l}P[i]+P[k]+F[k]= \sum_{i=1}^{l-1}P[i]+P[l]+P[k]+F[k]$，很明显这两个值相等，所以若两个作业的$ F $值相等，则其调度的先后顺序不影响最大用时的计算。
+		
+	\subsection{复杂度分析}		
+	\begin{itemize}
+		\item{\textbf{时间复杂度:}} \\
+		排序的时间复杂度为$ O(nlogn) $, 计算最优解的时间复杂度为$ O(n) $,所以总的时间复杂度为：$T(n)=O(nlogn) $
+		\item{\textbf{空间复杂度:}}\\
+		额外使用的空间是常数量级的，即为$ O(1) $。
+	\end{itemize}
+	
+	\newpage
+	\section{是否存在子序列？}
+	\subsection{问题描述}
+		Given two strings $ s $ and $ t $, check if $ s $ is subsequence of $ t $?
+		
+		A subsequence of a string is a new string which is formed from the original string by deleting some (can be none) of the characters without disturbing the relative positions of the remaining characters. (ie, ”ace” is a subsequence of ”abcde” while ”aec” is not).
+
+	\subsection{基本思想}
+		如果字符串$ s $的长度大于字符串$ t $的长度，则字符串$ s $不可能是字符串$ t $的子序列，返回false。
+	
+		否则，对字符串$ s $的每一个字母$ s_{i} $，每次都在字符串$ t $的搜索串$ t^{'} $中搜索最靠前的与该字母相同的项$ t_{j} $，如果在搜索串$ t^{'} $中没有找到相同项，则返回false；否则，更新搜索串$ t^{'} $为去掉$ t_{j} $及其前半部分后剩下的子串，继续重复执行该方法，直到字符串$ s $中的每一项都能在字符串$ t $中按序对应为止。
+				
+	\subsection{伪代码}
+		\begin{algorithm}[htb]
+			\caption{Is Subsequence？}
+			\begin{algorithmic}[1]
+				\Require
+				Given two strings $ s $ and $ t $
+				\Ensure
+				check if $ s $ is subsequence of $ t $
+				\Function {IsSubsequence}{$ s , t $}
+					\State $ n \gets s.length() $
+					\State $ m \gets t.length() $
+					\If{$ n > m $}
+						\State \Return false
+					\EndIf
+					\State $ i,j \gets 0 $
+					\For{$ i = 0 \to n $}
+						\While{$ j < m\ \textbf{and}\ s[i] != t[j] $}
+							\State $ j++ $\
+						\EndWhile
+						\If{$ j == m $}
+							\State break
+						\EndIf
+						\State $ j++ $
+					\EndFor
+					\If{$ i != n $}
+						\State \Return false
+					\EndIf
+					\State \Return ture
+				\EndFunction
+			\end{algorithmic}
+		\end{algorithm}
+	
+	\subsection{贪心选择性质}
+		每次都从字符串$ t $的子串$ t^{'} $中选择最先与$ s_{i} $匹配的项当做字符串$ t $的子序列中的一项。
+	\subsection{最优子结构性质}
+			
+		$$ OPT(s[i\dots n],t[j\dots m]) = \left\{
+		\begin{aligned}
+			& true &&\ if\ i>n\\
+			& OPT(s[i+1\dots n],t[k+1\dots m]) &&\ if\ s[i]==t[k],k\in[j,m]\\
+			& false	&&\ otherwise
+		\end{aligned}
+		\right.
+		$$
+		第一个式子中，当$ i>n $，意味着字符串$ s $已搜索完毕且其为字符串$ t $的一个子序列；
+		
+		第二个式子中，$ k $为$ t[j\dots m] $中第一个与$ s[i]$相同的字母的下标；
+		
+		如果找不到这样的$ k $，则说明字符串$ s $不可能为字符串$ t $的一个子序列。
+
+	\subsection{正确性证明}
+		对于$ s[i\dots n],t[j\dots m] $ ，现在从字符串$t[j\dots m] $中寻找第一次$ s[i] $出现的情况，设其下标为$ k，k\in[j,m] $，则再在从字符串$t[k+1\dots m] $中找满足$ s[i+1\dots n] $的子序列。
+		假如我们不选第一次$ s[i] $出现的情况，选择第{2,3,or...}次$ s[i] $出现时情况，记下标为$ l $,很明显$ k<l\le m $。这样就需要在字符串$t[l+1\dots m] $中找满足$ s[i+1\dots n] $的子序列。但是可能会出现这样的一种情况，字符串$ s[i+1\dots h],h\in[i+1,n] $只能在$t[k+1\dots l]$找到子序列，而无法在$t[l+1\dots m] $中找到子序列，这样就可能出现错误的结果。
+	
+	\subsection{复杂度分析}		
+		\begin{itemize}
+			\item{\textbf{时间复杂度:}} \\
+				获取字符串$ s $和$ t $的长度的时间复杂度分别为$ O(n)、O(m) $，检测是否是子序列的过程时间复杂度为$ O(n+m) $，因此总的时间复杂度为$ O(n+m) $。
+			\item{\textbf{空间复杂度:}}\\
+				额外使用的空间是常数量级的，即为$ O(1) $。
+		\end{itemize}
+	\end{CJK}	
+
+\end{document} 
